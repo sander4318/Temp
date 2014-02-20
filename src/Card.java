@@ -1,4 +1,8 @@
-
+/**
+ * Old class, not used in app just for testing purposes
+ * @author Sander
+ *
+ */
 public class Card {
 	private String name;
 	private static final int[] blauw = { 4, 6, 8, 10 };

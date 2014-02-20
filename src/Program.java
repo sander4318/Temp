@@ -1,3 +1,8 @@
+/**
+ * Old class, not used in app just for testing purposes
+ * @author Sander
+ *
+ */
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
