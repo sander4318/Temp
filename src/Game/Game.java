@@ -7,8 +7,8 @@ public class Game {
 	private boolean running;
 	private String input;
 
-	public Game(iLogging parent) {
-		this.console = parent;
+	public Game(iLogging console) {
+		this.console = console;
 		init();
 		start();
 
