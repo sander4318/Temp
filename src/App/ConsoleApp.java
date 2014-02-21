@@ -38,8 +38,15 @@ public class ConsoleApp implements iLogging {
 	
 	@Override
 	public void write(String text) {
-		System.out.println(text);
-		
+		write(text,true);	
+	}
+	
+	public void write(String text, boolean oneline){
+		if(oneline){
+			System.out.println(text);
+		} else{
+			System.out.print(text);
+		}
 	}
 
 }
