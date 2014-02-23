@@ -1,5 +1,7 @@
 package Game;
 
+import java.util.ArrayList;
+
 import UI.iLogging;
 
 public class Game {
@@ -14,14 +16,17 @@ public class Game {
 	private MobField mobfield1;
 	private MobField mobfield2;
 	private MobField mobfield3;
+	private ArrayList<MobField> mobfields;
 
 	private PlayerField playerfield1;
 	private PlayerField playerfield2;
 	private PlayerField playerfield3;
+	private ArrayList<PlayerField> playerfields;
 
 	private CentralField centralfield1;
 	private CentralField centralfield2;
 	private CentralField centralfield3;
+	private ArrayList<CentralField> centralfields;
 
 	private PscoreField pscorefield;
 	private MscoreField mscorefield;
@@ -37,6 +42,8 @@ public class Game {
 	 * Instantiate everything
 	 */
 	private void init() {
+
+		// hand and draw- and discardpile
 		wr("Initializing game");
 		drawpile = new DrawPile();
 		wr("Drawpile created and shuffled");
@@ -44,19 +51,40 @@ public class Game {
 		hand = new Hand();
 		drawHand();
 		wr("Your hand = " + hand);
+
+		// mobfields
+		mobfields = new ArrayList<MobField>();
 		mobfield1 = new MobField(1);
 		mobfield2 = new MobField(2);
 		mobfield3 = new MobField(3);
+		mobfields.add(mobfield1);
+		mobfields.add(mobfield2);
+		mobfields.add(mobfield3);
+
 		drawMobs();
 		wr("Mob 1 has: " + mobfield1);
 		wr("Mob 2 has: " + mobfield2);
 		wr("Mob 3 has: " + mobfield3);
+
+		// playerfields
+		playerfields = new ArrayList<PlayerField>();
 		playerfield1 = new PlayerField(1);
 		playerfield2 = new PlayerField(2);
 		playerfield3 = new PlayerField(3);
+		playerfields.add(playerfield1);
+		playerfields.add(playerfield2);
+		playerfields.add(playerfield3);
+
+		// centralfields
+		centralfields = new ArrayList<CentralField>();
 		centralfield1 = new CentralField(1);
 		centralfield2 = new CentralField(2);
 		centralfield3 = new CentralField(3);
+		centralfields.add(centralfield1);
+		centralfields.add(centralfield2);
+		centralfields.add(centralfield3);
+
+		// scorefields
 		pscorefield = new PscoreField();
 		mscorefield = new MscoreField();
 		wr("Done initializing");
@@ -67,8 +95,11 @@ public class Game {
 	 */
 	private void start() {
 		wr("- - - - - - - - - - Game starting - - - - - - - - - -");
-		wr("type 'help' or 'h' for info about the phase you are currently in.");
-		wr("type 'next' or 'n' to go to next phase (for testing only)");
+		wr("! The game prints '...' when an automatic event is about to happen. press enter to continue.");
+		wr("! The game prints '>>>' when it wants input from you");
+		wr("! On either of these prompts:");
+		wr("! Type 'help' or 'h' for info about the game phases.");
+		wr("! Type 'field' or 'f' to get a preview of the field.");
 		running = true;
 		int turn = 1;
 		while (running) {
@@ -89,36 +120,83 @@ public class Game {
 
 	private void phase1() {
 		wr("* * PHASE1");
-		// wr("not really doing anythign here yet");
-		// while (true) {
-		// // TODO make this phase usefull
-		// in = inp(">>>");
-		// if (eq(in, "help")) {
-		// // help(1);
-		// break;
-		// } else if (eq(in, "next")) {
-		// break;
-		// } else {
-		// break;
-		// }
-		// }
 
 	}
 
 	private void phase2() {
 		wr("* * PHASE2");
 		Card first = hand.getFirst();
-		inp("First Hand-Card (" + first + ") to field:");
-		int result = whichField("player", first);
-		wr("" + result);
-		if (result == 0) {
-			inp("you'll have to harvest");
-		} else if (result == 1) {
-			tryToMove(first, hand, playerfield1);
-		} else if (result == 2) {
-			tryToMove(first, hand, playerfield2);
-		} else if (result == 3) {
-			tryToMove(first, hand, playerfield3);
+		PlayerField pf = whichPlayerField(first);
+		if (pf == null) {
+			wr("you'll have to harvest");
+			inp("...");
+			wr("which of your field would you like to harvest? (1/2/3)");
+			while (true) {
+				in = inp(">>>");
+				if (eq(in, "1")) {
+					pf = playerfield1;
+					break;
+				} else if (eq(in, "2")) {
+					pf = playerfield2;
+					break;
+				} else if (eq(in, "3")) {
+					pf = playerfield3;
+					break;
+				}
+			}
+			harvest(pf);
+			tryToMove(first, hand, pf);
+		} else {
+			wr("First Hand-Card (" + simpleName(first) + ") to field: "
+					+ simpleName(pf));
+			inp("...");
+			tryToMove(first, hand, pf);
+		}
+
+		Card second = hand.getFirst();
+		wr("Do you want to plant second Hand-Card (" + simpleName(second)
+				+ ")? ([y]es/[n]o)");
+		while (true) {
+			in = inp(">>>");
+			if (eq(in, "yes")) {
+				pf = whichPlayerField(second);
+				if (pf == null) {
+					wr("you'll have to harvest");
+					inp("...");
+					wr("which of your field would you like to harvest? (1/2/3)");
+					while (true) {
+						in = inp(">>>");
+						if (eq(in, "1")) {
+							pf = playerfield1;
+							break;
+						} else if (eq(in, "2")) {
+							pf = playerfield2;
+							break;
+						} else if (eq(in, "3")) {
+							pf = playerfield3;
+							break;
+						}
+					}
+					harvest(pf);
+					tryToMove(first, hand, pf);
+				} else {
+					wr("i would say to field: " + simpleName(pf));
+					wr("is that ok? ([y]es/[n]o)");
+					while (true) {
+						in = inp(">>>");
+						if (eq(in, "yes")) {
+							tryToMove(second, hand, pf);
+							break;
+						} else if (eq(in, "no")) {
+							wr("too bad, only yes allowed :)"); // TODO make no
+																// useful
+						}
+					}
+				}
+				break;
+			} else if (eq(in, "no")) {
+				break;
+			}
 		}
 	}
 
@@ -132,10 +210,25 @@ public class Game {
 	}
 
 	private void phase5() {
-		// wr("* * PHASE5");
+		wr("* * PHASE5");
+		wr("getting two new cards");
+		inp("...");
+		tryToMove(drawpile.getFirst(), drawpile, hand);
+		tryToMove(drawpile.getFirst(), drawpile, hand);
 
 	}
 
+	/**
+	 * returns true if card `c` is movable from `from` to `to`
+	 * 
+	 * @param c
+	 *            - card to be moved
+	 * @param from
+	 *            - cardcollection
+	 * @param to
+	 *            - cardcollection
+	 * @return
+	 */
 	private boolean tryToMove(Card c, CardCollection from, CardCollection to) {
 		// wr("Trying to move " + simpleName(c) + " from " + simpleName(from) +
 		// " to " + simpleName(to)+" .... ",false);
@@ -156,126 +249,41 @@ public class Game {
 
 	/**
 	 * CardCollection.allowedToAdd-wrapper for testing if the card is already on
-	 * one of the fields of 'subject'.. if not: returns first empty field.. if not returns 0
+	 * one of the fields of 'subject'.. if not: returns first empty field.. if
+	 * not returns 0
 	 * 
 	 * @param field
 	 *            - ("player","mobs") subject
 	 * @param card
-	 * @return - (0) if not on fields - (1,2,3) if on corresponding field of
-	 *         subject or if not: (1,2,3) for first empty field
+	 * @return - (0) if not on fields and no empty fields - (1,2,3) if card on
+	 *         corresponding field of subject or if not: (1,2,3) for first empty
+	 *         field
 	 */
-	private int whichField(String subject, Card card) {
-		if (!subject.equals("player") && !subject.equals("mob")) {
-			wr("wrong argument passed to alreadyOnField");
-			return 0;
-		} else {
-			boolean f1empty;
-			boolean f2empty;
-			boolean f3empty;
-			boolean f1allow;
-			boolean f2allow;
-			boolean f3allow;
-			switch (subject) {
-			case "player":
-				if (playerfield1.cards.isEmpty()) {
-					f1empty = true;
-				} else {
-					f1empty = false;
-				}
-				if (playerfield2.cards.isEmpty()) {
-					f2empty = true;
-				} else {
-					f2empty = false;
-				}
-				if (playerfield3.cards.isEmpty()) {
-					f3empty = true;
-				} else {
-					f3empty = false;
-				}
-				if (playerfield1.allowedToAdd(card)) {
-					f1allow = true;
-				} else {
-					f1allow = false;
-				}
-				if (playerfield2.allowedToAdd(card)) {
-					f2allow = true;
-				} else {
-					f2allow = false;
-				}
-				if (playerfield3.allowedToAdd(card)) {
-					f3allow = true;
-				} else {
-					f3allow = false;
-				}
-				break;
-			case "mob":
-				if (mobfield1.cards.isEmpty()) {
-					f1empty = true;
-				} else {
-					f1empty = false;
-				}
-				if (mobfield2.cards.isEmpty()) {
-					f2empty = true;
-				} else {
-					f2empty = false;
-				}
-				if (mobfield3.cards.isEmpty()) {
-					f3empty = true;
-				} else {
-					f3empty = false;
-				}
-				if (mobfield1.allowedToAdd(card)) {
-					f1allow = true;
-				} else {
-					f1allow = false;
-				}
-				if (mobfield2.allowedToAdd(card)) {
-					f2allow = true;
-				} else {
-					f2allow = false;
-				}
-				if (mobfield3.allowedToAdd(card)) {
-					f3allow = true;
-				} else {
-					f3allow = false;
-				}
-				break;
-			default:
-				wr("case default");
-				f1empty = false;
-				f2empty = false;
-				f3empty = false;
-				f1allow = false;
-				f2allow = false;
-				f3allow = false;
-			}
-			if (f1allow && !f1empty) {
-				return 1;
-			} else if (f2allow && !f2empty) {
-				return 2;
-			} else if (f3allow && !f3empty) {
-				return 3;
-			} else if (f1allow && f1empty) {
-				return 1;
-			} else if (f2allow && f2empty) {
-				return 2;
-			} else if (f3allow && f3empty) {
-				return 3;
-			} else {
-				return 0;
+	private PlayerField whichPlayerField(Card card) {
+		for (PlayerField pf : playerfields) {
+			if (!pf.cards.isEmpty() && pf.allowedToAdd(card)) {
+				// wr(simpleName(pf) + " (same beans)");
+				return pf;
 			}
 		}
+		for (PlayerField pf : playerfields) {
+			if (pf.allowedToAdd(card)) {
+				// wr(simpleName(pf) + " (empty field)");
+				return pf;
+			}
+		}
+		return null;
 	}
 
-	//////////////////////////////
+	// ////////////////////////////
 	// Below are wrapper methods
 
-	
 	/**
 	 * tryToMove-wrapper that determines the score for harvesting and moves
 	 * appropriate cards to score- and discard fields
 	 * 
 	 * @param field
+	 *            - PlayerField or MobField instance
 	 */
 	private void harvest(Field field) {
 		if (field instanceof PlayerField) {
@@ -287,11 +295,14 @@ public class Game {
 			wr("THIS ERROR SHOULD NEVER BE SHOWN!");
 			return;
 		}
+		Card first = field.getFirst();
 		int cardOnField = field.cards.size();
 		int cardToScore = ((iRharvestable) field).valueField();
 		int cardToDiscard = cardOnField - cardToScore;
+		wr(cardOnField + " " + simpleName(first) + "(" + first.one + ","
+				+ first.two + "," + first.three + "," + first.four
+				+ ") scored for: " + cardToScore + " points.");
 		for (int i = 0; i < cardToScore; i++) {
-			wr("cardtoscore");
 			if (field instanceof PlayerField) {
 				tryToMove(field.getFirst(), field, pscorefield);
 			} else if (field instanceof MobField) {
@@ -299,37 +310,23 @@ public class Game {
 			}
 		}
 		for (int i = 0; i < cardToDiscard; i++) {
-			wr("cardtodiscard");
 			tryToMove(field.getFirst(), field, discardpile);
 		}
 	}
 
 	/**
-	 * wr-wrapper that prints the help string for the current game-phase
+	 * test if two strings are 'equal'. returns true if `one` isn't empty string
+	 * AND ( `one` equals `two` OR `two` starts with `one`)
+	 * 
+	 * @param one
+	 *            - string, usually the input received
+	 * @param two
+	 *            - string, usually the string the input has to be tested to
+	 * @return
 	 */
-	private void help(int phase) {
-		wr("Hulp:");
-		switch (phase) {
-		case 1:
-			wr("i dont wanna help in phase1");
-			break;
-		case 2:
-			wr("i dont wanna help in phase2");
-			break;
-		case 3:
-			wr("i dont wanna help in phase3");
-			break;
-		case 4:
-			wr("i dont wanna help in phase4");
-			break;
-		case 5:
-			wr("i dont wanna help in phase5");
-			break;
-		}
-	}
-
 	private boolean eq(String one, String two) {
-		if (one.equalsIgnoreCase(two) || two.startsWith(one)) {
+		if (!one.equals("")
+				&& (one.equalsIgnoreCase(two) || two.startsWith(one))) {
 			return true;
 		} else {
 			return false;
@@ -390,7 +387,60 @@ public class Game {
 	 * @return
 	 */
 	private String inp(String out) {
-		return console.askInput(out);
+		if (out.equals(">>>") || out.equals("...")) {
+			String res;
+			while (true) {
+				res = console.askInput(out);
+				if (res.equals("")) {
+					if (out.equals("...")) {
+						return res;
+					}
+				} else if (eq(res, "help")) {
+					help();
+				} else if (eq(res, "field")) {
+					previewField();
+				} else if (eq(res, "deck")) {
+					wr("" + drawpile.cards.size());
+					wr("" + drawpile);
+				} else {
+					return res;
+				}
+			}
+		} else {
+			return console.askInput(out);
+		}
+	}
+
+	/**
+	 * draw the phases
+	 */
+	private void help() {
+		wr("____________________________________");
+		wr("**************  help  **************");
+		wr("1: all mobs get (max 1) card which both you and they have on the field");
+		wr("2: you have to place your first handcard to one of your fields, second is optional");
+		wr("3: draw 3 cards to central fields, each draw checking: 1) does a mob collect it? y-> give (draw replacement) 2) same card on discard? y-> also place on central field");
+		wr("4: plant all cards from central fields to your fields");
+		wr("5: draw 2 cards");
+		wr("____________________________________");
+	}
+
+	/**
+	 * draw the field (only mob-, playerfield and hand so far)
+	 */
+	private void previewField() {
+		wr("____________________________________");
+		wr("********** field preview ***********");
+		wr("mob1: " + mobfield1);
+		wr("mob2: " + mobfield2);
+		wr("mob3: " + mobfield3);
+		wr("____________________________________");
+		wr("field1: " + playerfield1);
+		wr("field2: " + playerfield2);
+		wr("field3: " + playerfield3);
+		wr("____________________________________");
+		wr("hand: " + hand);
+		wr("____________________________________");
 	}
 
 	/**
@@ -400,8 +450,10 @@ public class Game {
 	 * @return
 	 */
 	private String simpleName(Object obj) {
-		if (obj instanceof Field) {
+		if (obj instanceof MobField) {
 			return "MobField" + ((Field) obj).getID();
+		} else if (obj instanceof PlayerField) {
+			return "PlayerField" + ((Field) obj).getID();
 		} else {
 			return obj.getClass().getSimpleName();
 		}

@@ -7,8 +7,8 @@ public abstract class Field extends CardCollection {
 		this.id = id;
 	}
 
-	public String getID() {
-		return "" + this.id;
+	public int getID() {
+		return this.id;
 	}
 
 	@Override
