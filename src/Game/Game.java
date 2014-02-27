@@ -100,6 +100,7 @@ public class Game {
 		wr("! On either of these prompts:");
 		wr("! Type 'help' or 'h' for info about the game phases.");
 		wr("! Type 'field' or 'f' to get a preview of the field.");
+		wr("! Type 'score' or 's' to get the current scores");
 		running = true;
 		int turn = 1;
 		while (running) {
@@ -120,7 +121,16 @@ public class Game {
 
 	private void phase1() {
 		wr("* * PHASE1");
-
+		wr("checking if mobs are collecting same beans");
+		int i = 1;
+		for (CentralField cf : centralfields) {
+			if (cf.cards.size() > 0) {
+				wr(simpleName(cf) + "" + i + ": " + cf);
+				Card first = cf.getFirst();
+			} else{
+				wr("niet zelfde");
+			}
+		}
 	}
 
 	private void phase2() {
@@ -129,6 +139,7 @@ public class Game {
 		PlayerField pf = whichPlayerField(first);
 		if (pf == null) {
 			wr("you'll have to harvest");
+			// TODO not possible to harvest field with 1, unless all 1
 			inp("...");
 			wr("which of your field would you like to harvest? (1/2/3)");
 			while (true) {
@@ -178,7 +189,7 @@ public class Game {
 						}
 					}
 					harvest(pf);
-					tryToMove(first, hand, pf);
+					tryToMove(second, hand, pf);
 				} else {
 					wr("i would say to field: " + simpleName(pf));
 					wr("is that ok? ([y]es/[n]o)");
@@ -188,8 +199,8 @@ public class Game {
 							tryToMove(second, hand, pf);
 							break;
 						} else if (eq(in, "no")) {
-							wr("too bad, only yes allowed :)"); // TODO make no
-																// useful
+							wr("ok whatever, moving on");
+							inp("...");
 						}
 					}
 				}
@@ -201,11 +212,87 @@ public class Game {
 	}
 
 	private void phase3() {
-		// wr("* * PHASE3");
+		wr("* * PHASE3");
+		wr("drawing cards to central fields");
+		inp("...");
+		for (int i = 1; i < 4; i++) {
+			wr("");
+			wr("/-- Getting card " + i);
+			while (true) {
+				Card c = drawpile.getFirst();
+				wr("<--Card drawn: " + simpleName(c));
+				if (doMobsCollect(c)) {
+					wr("-->moving to mobfield, drawing replacement:");
+					tryToMove(c, drawpile, whichMobField(c));
+				} else {
+					wr("-->Card " + i + " for centralfield");
+					tryToMove(c, drawpile, whichCentralField(c, true));
+					break;
+				}
+			}
+			while (true) {
+				wr("   \\ check top of discard");
+				if (discardpile.cards.isEmpty()) {
+					wr("   |- no cards, continue");
+					break;
+				} else {
+					Card c = discardpile.getFirst();
+					wr("   |<-- Top card: " + simpleName(c));
+					if (tryToMove(c, discardpile, whichCentralField(c, false))) {
+						wr("   |--> to central field");
+					} else {
+						wr("   \\-- not found on central fields");
+						break;
+					}
+				}
+			}
+		}
+		inp("...");
 	}
 
 	private void phase4() {
-		// wr("* * PHASE4");
+		wr("* * PHASE4");
+		wr("you now have to place all the beans of the central fields on your fields");
+		inp("...");
+		int i = 1;
+		for (CentralField cf : centralfields) {
+			if (cf.cards.size() > 0) {
+				wr(simpleName(cf) + "" + i + ": " + cf);
+				Card first = cf.getFirst();
+				PlayerField pf = whichPlayerField(first);
+				if (pf == null) {
+					wr("you'll have to harvest");
+					// TODO not possible to harvest field with 1, unless all 1
+					inp("...");
+					wr("which of your field would you like to harvest? (1/2/3)");
+					while (true) {
+						in = inp(">>>");
+						if (eq(in, "1")) {
+							pf = playerfield1;
+							break;
+						} else if (eq(in, "2")) {
+							pf = playerfield2;
+							break;
+						} else if (eq(in, "3")) {
+							pf = playerfield3;
+							break;
+						}
+					}
+					harvest(pf);
+					pf.cards.addAll(cf.cards);
+					cf.cards.clear();
+				} else {
+					wr("Cards from " + simpleName(cf) + " to field: "
+							+ simpleName(pf));
+					inp("...");
+					pf.cards.addAll(cf.cards);
+					cf.cards.clear();
+				}
+			} else {
+				wr(simpleName(cf) + "" + i + ": empty");
+			}
+			i++;
+		}
 
 	}
 
@@ -232,7 +319,7 @@ public class Game {
 	private boolean tryToMove(Card c, CardCollection from, CardCollection to) {
 		// wr("Trying to move " + simpleName(c) + " from " + simpleName(from) +
 		// " to " + simpleName(to)+" .... ",false);
-		if (to.allowedToAdd(c)) {
+		if (!(to == null) && to.allowedToAdd(c)) {
 			if (from.remove(c)) {
 				// wr("yes");
 				return to.add(c);
@@ -249,15 +336,11 @@ public class Game {
 
 	/**
 	 * CardCollection.allowedToAdd-wrapper for testing if the card is already on
-	 * one of the fields of 'subject'.. if not: returns first empty field.. if
-	 * not returns 0
+	 * one of the playerfields
 	 * 
-	 * @param field
-	 *            - ("player","mobs") subject
 	 * @param card
-	 * @return - (0) if not on fields and no empty fields - (1,2,3) if card on
-	 *         corresponding field of subject or if not: (1,2,3) for first empty
-	 *         field
+	 * @return - the playerfield that is already collecting these cards, if none
+	 *         are: first field that is empty, if none are: returns none
 	 */
 	private PlayerField whichPlayerField(Card card) {
 		for (PlayerField pf : playerfields) {
@@ -273,6 +356,86 @@ public class Game {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * CardCollection.allowedToAdd-wrapper for testing if the card is already on
+	 * one of the mobfields
+	 * 
+	 * @param card
+	 * @return - the mobfield that is already collecting these cards, if none
+	 *         are: first field that is empty, if none are: returns none
+	 */
+	private MobField whichMobField(Card card) {
+		for (MobField mf : mobfields) {
+			if (!mf.cards.isEmpty() && mf.allowedToAdd(card)) {
+				// wr(simpleName(mf) + " (same beans)");
+				return mf;
+			}
+		}
+		for (MobField mf : mobfields) {
+			if (mf.allowedToAdd(card)) {
+				// wr(simpleName(mf) + " (empty field)");
+				return mf;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * CardCollection.allowedToAdd-wrapper for testing if the card is already on
+	 * one of the centralfields
+	 * 
+	 * @param card
+	 * @return - the centralfield that is already collecting these cards, if
+	 *         none are: first field that is empty, if none are: returns none
+	 */
+	private CentralField whichCentralField(Card card, boolean emptyAllowed) {
+		for (CentralField cf : centralfields) {
+			if (!cf.cards.isEmpty() && cf.allowedToAdd(card)) {
+				// wr(simpleName(cf) + " (same beans)");
+				return cf;
+			}
+		}
+		if (emptyAllowed) {
+			for (CentralField cf : centralfields) {
+				if (cf.allowedToAdd(card)) {
+					// wr(simpleName(cf) + " (empty field)");
+					return cf;
+				}
+			}
+		}
+		return null;
+	}
+
+	private boolean doMobsCollect(Card card) {
+		String c = simpleName(card);
+		String m1 = "";
+		String m2 = "";
+		String m3 = "";
+		if (mobfield1.cards.size() != 0) {
+			m1 = simpleName(mobfield1.getFirst());
+		}
+		if (mobfield2.cards.size() != 0) {
+			m2 = simpleName(mobfield2.getFirst());
+		}
+		if (mobfield3.cards.size() != 0) {
+			m3 = simpleName(mobfield3.getFirst());
+		}
+		if (eq(c, m1)) {
+			wr("| m1 collects");
+			return true;
+		} else if (eq(c, m2)) {
+			wr("| m2 collects");
+			return true;
+		} else if (eq(c, m3)) {
+			wr("| m3 collects");
+			return true;
+		} else {
+			wr("| none of the mobs collect it :)");
+			return false;
+		}
+
 	}
 
 	// ////////////////////////////
@@ -401,7 +564,9 @@ public class Game {
 					previewField();
 				} else if (eq(res, "deck")) {
 					wr("" + drawpile.cards.size());
-					wr("" + drawpile);
+					wr("" + discardpile);
+				} else if (eq(res, "score")) {
+					displayScores();
 				} else {
 					return res;
 				}
@@ -435,11 +600,26 @@ public class Game {
 		wr("mob2: " + mobfield2);
 		wr("mob3: " + mobfield3);
 		wr("____________________________________");
+		wr("central1: " + centralfield1);
+		wr("central2: " + centralfield2);
+		wr("central3: " + centralfield3);
+		wr("____________________________________");
 		wr("field1: " + playerfield1);
 		wr("field2: " + playerfield2);
 		wr("field3: " + playerfield3);
 		wr("____________________________________");
 		wr("hand: " + hand);
+		wr("____________________________________");
+	}
+
+	/**
+	 * display the current scores
+	 */
+	private void displayScores() {
+		wr("____________________________________");
+		wr("********** current scores **********");
+		wr("Mobs: " + mscorefield.cards.size());
+		wr("You:  " + pscorefield.cards.size());
 		wr("____________________________________");
 	}
 

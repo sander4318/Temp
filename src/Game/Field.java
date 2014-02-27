@@ -14,7 +14,6 @@ public abstract class Field extends CardCollection {
 	@Override
 	public boolean allowedToAdd(Object obj) {
 		if (cards.isEmpty()) {
-			//TODO also check if not on other field of same class
 			return true;
 		} else if (obj.getClass() == getFirst().getClass()) {
 			return true;
